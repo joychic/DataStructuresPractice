@@ -1,18 +1,18 @@
 package com.jc.datastructures;
 
+import com.jc.datastructures.hashing.CuckooHashTable;
 import com.jc.datastructures.hashing.QuadraticProbingHashTable;
+import com.jc.datastructures.hashing.SeparateChainingHashTable;
 import com.jc.datastructures.heap.BinaryHeap;
 import com.jc.datastructures.heap.LeftistHeap;
 import com.jc.datastructures.sort.Sort;
 import com.jc.datastructures.tree.AvlTree;
 import com.jc.datastructures.tree.BinarySearchTree;
 
-import org.junit.Test;
-
 import java.util.Random;
 
 
-public class TreeTest {
+public class ExampleTest {
 
     @org.junit.Test
     public void binarySearchTree() {
@@ -67,10 +67,42 @@ public class TreeTest {
 
         @Override
         public String toString() {
-            return "Test{" +
+            return "ExampleTest{" +
                     "node=" + node +
                     '}';
         }
+    }
+
+
+    @org.junit.Test
+    public void separateChainingHashTable() {
+        SeparateChainingHashTable<Integer> H = new SeparateChainingHashTable<>( );
+
+        long startTime = System.currentTimeMillis( );
+
+        final int NUMS = 2000000;
+        final int GAP  =   37;
+
+        System.out.println( "Checking... (no more output means success)" );
+
+        for( int i = GAP; i != 0; i = ( i + GAP ) % NUMS )
+            H.insert( i );
+        for( int i = 1; i < NUMS; i+= 2 )
+            H.remove( i );
+
+        for( int i = 2; i < NUMS; i+=2 )
+            if( !H.contains( i ) )
+                System.out.println( "Find fails " + i );
+
+        for( int i = 1; i < NUMS; i+=2 )
+        {
+            if( H.contains( i ) )
+                System.out.println( "OOPS!!! " +  i  );
+        }
+
+        long endTime = System.currentTimeMillis( );
+
+        System.out.println( "Elapsed time: " + (endTime - startTime) );
     }
 
 
@@ -107,6 +139,45 @@ public class TreeTest {
         long endTime = System.currentTimeMillis();
 
         System.out.println("Elapsed time: " + (endTime - startTime));
+    }
+
+
+    @org.junit.Test
+    public void cuckooHashTable() {
+        long cumulative = 0;
+        final int NUMS = 2000000;
+        final int GAP = 37;
+
+        CuckooHashTable<String> H = new CuckooHashTable<>(new StringHashFimily(3));
+        long startTime = System.currentTimeMillis();
+
+        for (int i = GAP; i != 0; i = (i + GAP) % NUMS)
+            H.insert("" + i);
+        for (int i = GAP; i != 0; i = (i + GAP) % NUMS)
+            if (H.insert("" + i))
+                System.out.println("OOPS!!! " + i);
+        for (int i = 1; i < NUMS; i += 2)
+            H.remove("" + i);
+
+        for (int i = 2; i < NUMS; i += 2)
+            if (!H.contains("" + i))
+                System.out.println("Find fails " + i);
+
+        for (int i = 1; i < NUMS; i += 2) {
+            if (H.contains("" + i))
+                System.out.println("OOPS!!! " + i);
+        }
+
+
+        long endTime = System.currentTimeMillis();
+
+        cumulative += endTime - startTime;
+
+        if (H.capacity() > NUMS * 4)
+            System.out.println("LARGE CAPACITY " + H.capacity());
+
+
+        System.out.println("Total elapsed time is: " + cumulative);
     }
 
 
@@ -187,7 +258,7 @@ public class TreeTest {
 
 
         System.out.println("Start RadixSort");
-        String[] str = new String[]{"sds", "dsds", "f", "oi", "pevd", "ffsa", "adwcge","aa","dsdd","dsde"};
+        String[] str = new String[]{"sds", "dsds", "f", "oi", "pevd", "ffsa", "adwcge", "aa", "dsdd", "dsde"};
         Sort.radixSort(str, 10);
         for (String s : str) {
             System.out.println(s);
@@ -219,6 +290,40 @@ public class TreeTest {
             for (int i = length; i > 0; i--) {
                 int randInd = rand.nextInt(i);
                 swap(arr, randInd, i - 1);
+            }
+        }
+    }
+
+
+    public class StringHashFimily implements CuckooHashTable.HashFamily<String> {
+        private final int[] MULTIPLIERS;
+        private final Random r = new Random();
+
+        public StringHashFimily(int d) {
+            this.MULTIPLIERS = new int[d];
+            generateNewFunctions();
+        }
+
+        @Override
+        public int hash(String x, int which) {
+            final int multiplier = MULTIPLIERS[which];
+            int hasVal = 0;
+
+            for (int i = 0; i < x.length(); i++) {
+                hasVal = multiplier * hasVal + x.charAt(i);
+            }
+            return hasVal;
+        }
+
+        @Override
+        public int getNumberOfFunctions() {
+            return MULTIPLIERS.length;
+        }
+
+        @Override
+        public void generateNewFunctions() {
+            for (int i = 0; i < MULTIPLIERS.length; i++) {
+                MULTIPLIERS[i] = r.nextInt();
             }
         }
     }
